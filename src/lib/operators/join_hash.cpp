@@ -167,7 +167,7 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
           auto& map_entry = it->second;
           if (map_entry.type() == typeid(RowID)) {
             // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.
-            *it = PosList{boost::get<RowID>(map_entry), element.row_id};
+            map_entry = PosList{boost::get<RowID>(map_entry), element.row_id};
           } else {
             boost::get<PosList>(map_entry).push_back(element.row_id);
           }
