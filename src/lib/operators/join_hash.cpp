@@ -162,12 +162,12 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
         const auto it = hashtable.find(hash_key);
         if (it == hashtable.end()) {
           // key is not present: add value and row ID
-          hashtable[hash_key] = element.row_id;
+          hashtable.emplace_hint(it, hash_key, element.row_id);
         } else {
           auto& map_entry = it->second;
           if (map_entry.type() == typeid(RowID)) {
             // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.
-            hashtable[hash_key] = PosList{boost::get<RowID>(map_entry), element.row_id};
+            *it = PosList{boost::get<RowID>(map_entry), element.row_id};
           } else {
             boost::get<PosList>(map_entry).push_back(element.row_id);
           }
