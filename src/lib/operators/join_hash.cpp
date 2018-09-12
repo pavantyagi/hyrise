@@ -158,7 +158,7 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
       for (size_t partition_offset = partition_left_begin; partition_offset < partition_left_end; ++partition_offset) {
         const auto& element = partition_left[partition_offset];
 
-        auto[it, inserted] result = hashtable.try_emplace(type_cast<HashedType>(element.value), element.row_id);
+        auto[it, inserted] = hashtable.try_emplace(type_cast<HashedType>(element.value), element.row_id);
         if (!inserted) {
           // We already have the value in the map
           auto& map_entry = it->second;
