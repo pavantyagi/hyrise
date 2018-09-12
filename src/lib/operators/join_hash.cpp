@@ -162,13 +162,13 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
         if (!inserted) {
           // We already have the value in the map
           auto& map_entry = it->second;
-          boost::apply_visitor([](auto& map_entry) {
-            if constexpr (std::is_same<std::decay_t<decltype(value)>, RowID>) {
+          boost::apply_visitor([&](auto& visited) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(visited)>, RowID>) {
               // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.
-              map_entry = PosList{map_entry, element.row_id};
+              map_entry = PosList{visited, element.row_id};
             } else {
-              // map_entry already is a PosList
-              map_entry.push_back(element.row_id);
+              // visited already is a PosList
+              visited.push_back(element.row_id);
             }
           }, map_entry);
         }
