@@ -158,12 +158,9 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
       for (size_t partition_offset = partition_left_begin; partition_offset < partition_left_end; ++partition_offset) {
         const auto& element = partition_left[partition_offset];
 
-        const auto hash_key = type_cast<HashedType>(element.value);
-        const auto it = hashtable.find(hash_key);
-        if (it == hashtable.end()) {
-          // key is not present: add value and row ID
-          hashtable.emplace_hint(it, hash_key, element.row_id);
-        } else {
+        auto[it, inserted] result = hashtable.try_emplace(type_cast<HashedType>(element.value), element.row_id);
+        if (!inserted) {
+          // We already have the value in the map
           auto& map_entry = it->second;
           if (map_entry.type() == typeid(RowID)) {
             // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.

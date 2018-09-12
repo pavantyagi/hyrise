@@ -35,6 +35,13 @@ const T& get(const AllTypeVariant& value) {
 
 // cast methods - from variant to specific type
 
+// Prevent implicint conversion of T into AllTypeVariant and back
+template <typename T>
+const T& type_cast(const T& value) {
+  std::cout << "bla" << std::endl;
+  return T;
+}
+
 // Template specialization for everything but integral types
 template <typename T>
 std::enable_if_t<!std::is_integral<T>::value, T> type_cast(const AllTypeVariant& value) {
