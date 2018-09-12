@@ -156,20 +156,26 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
       auto hashtable = HashTable<HashedType>(partition_size);
 
       for (size_t partition_offset = partition_left_begin; partition_offset < partition_left_end; ++partition_offset) {
-        const auto& element = partition_left[partition_offset];
+        auto& element = partition_left[partition_offset];
 
-        auto[it, inserted] = hashtable.try_emplace(type_cast<HashedType>(element.value), element.row_id);
+        auto[it, inserted] = hashtable.try_emplace(type_cast<HashedType>(std::move(element.value)), element.row_id);
         if (!inserted) {
           // We already have the value in the map
           auto& map_entry = it->second;
-          if (map_entry.type() == typeid(RowID)) {
-            // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.
-            map_entry = PosList{boost::get<RowID>(map_entry), element.row_id};
-          } else {
-            boost::get<PosList>(map_entry).push_back(element.row_id);
-          }
+          boost::apply_visitor(map_entry, [](auto& map_entry) {
+            if constexpr (std::is_same<std::decay_t<decltype(value)>, RowID>) {
+              // Previously, there was only one row id stored for this value. Convert the entry to a multi-row-id one.
+              map_entry = PosList{map_entry, element.row_id};
+            } else {
+              // map_entry already is a PosList
+              map_entry.push_back(element.row_id);
+            }
+          });
         }
       }
+
+      // We moved out of the partition above, so let's sure that nobody continues to use it
+      partition_left.clear();
 
       hashtables[current_partition_id] = std::move(hashtable);
     }));
@@ -410,7 +416,7 @@ void probe(const RadixContainer<RightType>& radix_container,
             const auto& matching_rows_variant = rows_iter->second;
             if (matching_rows_variant.type() == typeid(PosList)) {
               // Multiple matches, stored in one PosList
-              for (const auto row_id : boost::get<PosList>(matching_rows_variant)) {
+              for (const auto& row_id : boost::get<PosList>(matching_rows_variant)) {
                 if (row_id.chunk_offset != INVALID_CHUNK_OFFSET) {
                   pos_list_left_local.emplace_back(row_id);
                   pos_list_right_local.emplace_back(row.row_id);
@@ -418,7 +424,7 @@ void probe(const RadixContainer<RightType>& radix_container,
               }
             } else {
               // A single RowID
-              const auto row_id = boost::get<RowID>(matching_rows_variant);
+              const auto& row_id = boost::get<RowID>(matching_rows_variant);
               if (row_id.chunk_offset != INVALID_CHUNK_OFFSET) {
                 pos_list_left_local.emplace_back(row_id);
                 pos_list_right_local.emplace_back(row.row_id);

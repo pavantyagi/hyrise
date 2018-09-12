@@ -37,8 +37,8 @@ const T& get(const AllTypeVariant& value) {
 
 // Prevent implicint conversion of T into AllTypeVariant and back
 template <typename T>
-const T& type_cast(const T& value) {
-  return value;
+auto&& type_cast(T&& value) {
+  return std::forward<T>(value);
 }
 
 // Template specialization for everything but integral types
