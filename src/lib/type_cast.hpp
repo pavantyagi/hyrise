@@ -39,7 +39,7 @@ const T& get(const AllTypeVariant& value) {
 template <typename T>
 const T& type_cast(const T& value) {
   std::cout << "bla" << std::endl;
-  return T;
+  return value;
 }
 
 // Template specialization for everything but integral types
