@@ -1,5 +1,6 @@
 #include "join_hash.hpp"
 
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/small_vector.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -109,12 +110,29 @@ template <typename T>
 using Partition = std::vector<PartitionedElement<T>>;
 
 //
-constexpr int ASSUMED_ROWS_PER_VALUE = 2;
+constexpr int ASSUMED_ROWS_PER_VALUE = 10;
 
 using SmallPosList = boost::container::small_vector<RowID, ASSUMED_ROWS_PER_VALUE>;
 
+// Remember that the allocator is not propagated to neither Key nor Value. For that, you would need a scoped_allocator_adaptor.
+template <typename Key, typename Value>
+class MonotonicBufferedUnorderedMap {
+ public:
+  explicit MonotonicBufferedUnorderedMap(size_t initial_buffer_size)
+      : _buffer(std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initial_buffer_size)),
+        _map(PolymorphicAllocator<std::pair<const Key, Value>>{&*_buffer}) {}
+
+  auto* operator->() { return &_map; }
+
+  const auto* operator->() const { return &_map; }
+
+ protected:
+  std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> _buffer;
+  std::unordered_map<Key, Value, std::hash<Key>, std::equal_to<Key>, PolymorphicAllocator<std::pair<const Key, Value>>> _map;
+};
+
 template <typename T>
-using HashTable = std::unordered_map<T, SmallPosList>;
+using HashTable = MonotonicBufferedUnorderedMap<T, SmallPosList>;
 
 /*
 This struct contains radix-partitioned data in a contiguous buffer,
@@ -158,15 +176,17 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
 
       // Potentially oversizing the hash table when values are often repeated.
       // But rather have slightly too large hash tables than paying for complete rehashing/resizing.
-      auto hashtable = HashTable<HashedType>(partition_size);
+      // TODO : find good value instead of 10
+      auto hashtable = HashTable<HashedType>(partition_size * 10);
 
       for (size_t partition_offset = partition_left_begin; partition_offset < partition_left_end; ++partition_offset) {
         auto& element = partition_left[partition_offset];
 
-        auto[it, inserted] = hashtable.try_emplace(type_cast<HashedType>(std::move(element.value)), SmallPosList{element.row_id});
+        auto [it, inserted] =
+            hashtable->try_emplace(type_cast<HashedType>(std::move(element.value)), SmallPosList{element.row_id});
         if (!inserted) {
           // We already have the value in the map
-          it->second.push_back(element.row_id);
+          it->second.emplace_back(element.row_id);
         }
       }
 
@@ -405,9 +425,9 @@ void probe(const RadixContainer<RightType>& radix_container,
             continue;
           }
 
-          const auto& rows_iter = hashtable.find(type_cast<HashedType>(row.value));
+          const auto& rows_iter = hashtable->find(type_cast<HashedType>(row.value));
 
-          if (rows_iter != hashtable.end()) {
+          if (rows_iter != hashtable->end()) {
             // Key exists, thus we have at least one hit
             const auto& matching_rows = rows_iter->second;
             for (const auto& row_id : matching_rows) {
@@ -488,9 +508,10 @@ void probe_semi_anti(const RadixContainer<RightType>& radix_container,
           }
 
           const auto& hashtable = hashtables[current_partition_id].value();
-          const auto it = hashtable.find(type_cast<HashedType>(row.value));
+          const auto it = hashtable->find(type_cast<HashedType>(row.value));
 
-          if ((mode == JoinMode::Semi && it != hashtable.end()) || (mode == JoinMode::Anti && it == hashtable.end())) {
+          if ((mode == JoinMode::Semi && it != hashtable->end()) ||
+              (mode == JoinMode::Anti && it == hashtable->end())) {
             // Semi: found at least one match for this row -> match
             // Anti: no matching rows found -> match
             pos_list_local.emplace_back(row.row_id);
