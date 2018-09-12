@@ -118,9 +118,10 @@ using SmallPosList = boost::container::small_vector<RowID, ASSUMED_ROWS_PER_VALU
 template <typename Key, typename Value>
 class MonotonicBufferedUnorderedMap {
  public:
-  explicit MonotonicBufferedUnorderedMap(size_t initial_buffer_size)
-      : _buffer(std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initial_buffer_size)),
-        _map(PolymorphicAllocator<std::pair<const Key, Value>>{&*_buffer}) {}
+  // TODO Find a better estimation of how much space an entry takes than multiplying the initial_size with a fixed value
+  explicit MonotonicBufferedUnorderedMap(size_t initial_size)
+      : _buffer(std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initial_size * 10)),
+        _map(initial_size, PolymorphicAllocator<std::pair<const Key, Value>>{&*_buffer}) {}
 
   auto* operator->() { return &_map; }
 
@@ -176,8 +177,7 @@ std::vector<std::optional<HashTable<HashedType>>> build(const RadixContainer<Lef
 
       // Potentially oversizing the hash table when values are often repeated.
       // But rather have slightly too large hash tables than paying for complete rehashing/resizing.
-      // TODO : find good value instead of 10
-      auto hashtable = HashTable<HashedType>(partition_size * 10);
+      auto hashtable = HashTable<HashedType>(partition_size);
 
       for (size_t partition_offset = partition_left_begin; partition_offset < partition_left_end; ++partition_offset) {
         auto& element = partition_left[partition_offset];
