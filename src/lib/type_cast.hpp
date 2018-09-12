@@ -38,7 +38,6 @@ const T& get(const AllTypeVariant& value) {
 // Prevent implicint conversion of T into AllTypeVariant and back
 template <typename T>
 const T& type_cast(const T& value) {
-  std::cout << "bla" << std::endl;
   return value;
 }
 
