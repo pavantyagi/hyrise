@@ -25,8 +25,16 @@ struct OperatorScanPredicate {
                                                                            const AbstractLQPNode& node);
 
   OperatorScanPredicate() = default;
+
   OperatorScanPredicate(const ColumnID column_id, const PredicateCondition predicate_condition,
-                        const AllParameterVariant& value = NullValue{});
+                        const AllParameterVariant& value = AllParameterVariant{NullValue{}});
+
+  // Convert any passed T into an AllParameterVariant. This is necessary because usually, we want explicit construction
+  // of AllParameterVariants, so the constructor is marked explicit. Here, it is quite clear that the caller needs
+  // one.
+  template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, AllParameterVariant>>>
+  OperatorScanPredicate(const ColumnID column_id, const PredicateCondition predicate_condition, const T& value)
+      : OperatorScanPredicate(column_id, predicate_condition, AllParameterVariant{value}) {}
 
   // Returns a string representation of the predicate, using an optionally given table that is used to resolve column
   // ids to names.

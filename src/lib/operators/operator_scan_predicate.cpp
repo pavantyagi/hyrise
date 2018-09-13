@@ -18,11 +18,11 @@ std::optional<AllParameterVariant> resolve_all_parameter_variant(const AbstractE
   auto value = AllParameterVariant{};
 
   if (const auto* value_expression = dynamic_cast<const ValueExpression*>(&expression)) {
-    value = value_expression->value;
+    value = AllParameterVariant{value_expression->value};
   } else if (const auto column_id = node.find_column_id(expression)) {
-    value = *column_id;
+    value = AllParameterVariant{*column_id};
   } else if (const auto parameter_expression = dynamic_cast<const ParameterExpression*>(&expression)) {
-    value = parameter_expression->parameter_id;
+    value = AllParameterVariant{parameter_expression->parameter_id};
   } else {
     return std::nullopt;
   }

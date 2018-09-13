@@ -23,7 +23,7 @@ std::shared_ptr<ValueExpression> value_(const AllTypeVariant& value) {  // NOLIN
 // otherwise the NOLINT markers get misplaced
 // clang-format off
 std::shared_ptr<ValueExpression> null_() { // NOLINT - clang-tidy doesn't like the suffix
-  return std::make_shared<ValueExpression>(NullValue{});
+  return std::make_shared<ValueExpression>(AllTypeVariant{NullValue{}});
 }
 
 std::shared_ptr<ParameterExpression> parameter_(const ParameterID parameter_id) {  // NOLINT - clang-tidy doesn't like the suffix

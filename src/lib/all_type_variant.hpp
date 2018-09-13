@@ -74,9 +74,6 @@ static constexpr auto data_types_including_null = hana::prepend(data_types, hana
 // Converts tuple to mpl vector
 using TypesAsMplVector = decltype(hana::to<hana::ext::boost::mpl::vector_tag>(data_types_including_null));
 
-// Creates boost::variant from mpl vector
-using AllTypeVariant = typename boost::make_variant_over<detail::TypesAsMplVector>::type;
-
 }  // namespace detail
 
 static constexpr auto data_types = detail::data_types;
@@ -85,7 +82,48 @@ static constexpr auto data_type_pairs = detail::data_type_enum_pairs;
 static constexpr auto data_type_enum_string_pairs = detail::data_type_enum_string_pairs;
 
 using DataType = detail::DataType;
-using AllTypeVariant = detail::AllTypeVariant;
+
+// Creates boost::variant from mpl vector
+using AllTypeVariant /*NonExplicit*/ = typename boost::make_variant_over<detail::TypesAsMplVector>::type;
+
+// // We wrap a struct that does nothing around AllTypeVariantNonExplicit because we want to make the constructor of the
+// // variant explicit. Otherwise, people create AllTypeVariants all over the place without being aware of it.
+// struct AllTypeVariant : public AllTypeVariantNonExplicit {
+//   AllTypeVariant() : AllTypeVariantNonExplicit() {}
+
+//   template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, AllTypeVariant>>>
+//   explicit AllTypeVariant(const T& value) : AllTypeVariantNonExplicit(value) {}
+
+//   template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, AllTypeVariant>>>
+//   explicit AllTypeVariant(T&& value) : AllTypeVariantNonExplicit(std::forward<T>(value)) {}
+
+//   operator AllTypeVariantNonExplicit() {
+//     return static_cast<AllTypeVariantNonExplicit>(*this);
+//   }
+
+//   // No need for a destructor here, because the base destructor will be called. Rule of five does not apply.
+//   AllTypeVariant(const AllTypeVariant& variant)
+//       : AllTypeVariantNonExplicit(static_cast<const AllTypeVariantNonExplicit&>(variant)) {}
+//   AllTypeVariant(AllTypeVariant&& variant)
+//       : AllTypeVariantNonExplicit(static_cast<AllTypeVariantNonExplicit&&>(
+//             static_cast<AllTypeVariantNonExplicit&&>(std::forward<AllTypeVariant>(variant)))) {}
+//   AllTypeVariant& operator=(const AllTypeVariant& variant) {
+//     return static_cast<AllTypeVariant&>(
+//         AllTypeVariantNonExplicit::operator=(static_cast<const AllTypeVariantNonExplicit&>(variant)));
+//   }
+//   AllTypeVariant& operator=(AllTypeVariant&& variant) {
+//     return static_cast<AllTypeVariant&>(AllTypeVariantNonExplicit::operator=(static_cast<AllTypeVariantNonExplicit&&>(
+//         static_cast<AllTypeVariantNonExplicit&&>(std::forward<AllTypeVariant>(variant)))));
+//   }
+
+//   bool operator==(const AllTypeVariant& other) const {
+//     return static_cast<const AllTypeVariantNonExplicit&>(*this) == static_cast<const AllTypeVariantNonExplicit&>(other);
+//   }
+
+//   bool operator!=(const AllTypeVariant& other) const {
+//     return static_cast<const AllTypeVariantNonExplicit&>(*this) != static_cast<const AllTypeVariantNonExplicit&>(other);
+//   }
+// };
 
 // Function to check if AllTypeVariant is null
 inline bool variant_is_null(const AllTypeVariant& variant) { return (variant.which() == 0); }

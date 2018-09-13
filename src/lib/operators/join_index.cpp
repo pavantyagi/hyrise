@@ -207,39 +207,39 @@ void JoinIndex::_join_two_segments_using_index(LeftIterator left_it, LeftIterato
 
     switch (_predicate_condition) {
       case PredicateCondition::Equals: {
-        range_begin = index->lower_bound({left_value.value()});
-        range_end = index->upper_bound({left_value.value()});
+        range_begin = index->lower_bound({AllTypeVariant{left_value.value()}});
+        range_end = index->upper_bound({AllTypeVariant{left_value.value()}});
         break;
       }
       case PredicateCondition::NotEquals: {
         // first, get all values less than the search value
         range_begin = index->cbegin();
-        range_end = index->lower_bound({left_value.value()});
+        range_end = index->lower_bound({AllTypeVariant{left_value.value()}});
 
         _append_matches(range_begin, range_end, left_value.chunk_offset(), chunk_id_left, chunk_id_right);
 
         // set range for second half to all values greater than the search value
-        range_begin = index->upper_bound({left_value.value()});
+        range_begin = index->upper_bound({AllTypeVariant{left_value.value()}});
         range_end = index->cend();
         break;
       }
       case PredicateCondition::GreaterThan: {
         range_begin = index->cbegin();
-        range_end = index->lower_bound({left_value.value()});
+        range_end = index->lower_bound({AllTypeVariant{left_value.value()}});
         break;
       }
       case PredicateCondition::GreaterThanEquals: {
         range_begin = index->cbegin();
-        range_end = index->upper_bound({left_value.value()});
+        range_end = index->upper_bound({AllTypeVariant{left_value.value()}});
         break;
       }
       case PredicateCondition::LessThan: {
-        range_begin = index->upper_bound({left_value.value()});
+        range_begin = index->upper_bound({AllTypeVariant{left_value.value()}});
         range_end = index->cend();
         break;
       }
       case PredicateCondition::LessThanEquals: {
-        range_begin = index->lower_bound({left_value.value()});
+        range_begin = index->lower_bound({AllTypeVariant{left_value.value()}});
         range_end = index->cend();
         break;
       }

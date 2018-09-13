@@ -123,13 +123,14 @@ class MonotonicBufferedUnorderedMap {
       : _buffer(std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initial_size * 10)),
         _map(initial_size, PolymorphicAllocator<std::pair<const Key, Value>>{&*_buffer}) {}
 
-  auto* operator->() { return &_map; }
+  auto* operator-> () { return &_map; }
 
-  const auto* operator->() const { return &_map; }
+  const auto* operator-> () const { return &_map; }
 
  protected:
   std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> _buffer;
-  std::unordered_map<Key, Value, std::hash<Key>, std::equal_to<Key>, PolymorphicAllocator<std::pair<const Key, Value>>> _map;
+  std::unordered_map<Key, Value, std::hash<Key>, std::equal_to<Key>, PolymorphicAllocator<std::pair<const Key, Value>>>
+      _map;
 };
 
 template <typename T>

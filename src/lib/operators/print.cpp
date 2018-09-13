@@ -124,12 +124,12 @@ std::vector<uint16_t> Print::_column_string_widths(uint16_t min, uint16_t max,
   for (ChunkID chunk_id{0}; chunk_id < input_table_left()->chunk_count(); ++chunk_id) {
     auto chunk = input_table_left()->get_chunk(chunk_id);
 
-    for (ColumnID column_id{0}; column_id < chunk->column_count(); ++column_id) {
-      for (size_t row = 0; row < chunk->size(); ++row) {
-        auto cell_length = static_cast<uint16_t>(to_string((*chunk->get_segment(column_id))[row]).size());
-        widths[column_id] = std::max({min, widths[column_id], std::min(max, cell_length)});
-      }
-    }
+    // for (ColumnID column_id{0}; column_id < chunk->column_count(); ++column_id) {
+    //   for (size_t row = 0; row < chunk->size(); ++row) {
+    //     auto cell_length = static_cast<uint16_t>(std::to_string((*chunk->get_segment(column_id))[row]).size());
+    //     widths[column_id] = std::max({min, widths[column_id], std::min(max, cell_length)});
+    //   }
+    // }
   }
   return widths;
 }

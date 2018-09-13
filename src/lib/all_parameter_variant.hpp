@@ -32,7 +32,47 @@ using ParameterTypesAsMplVector =
     decltype(hana::to<hana::ext::boost::mpl::vector_tag>(parameter_types_as_hana_sequence));
 
 // Create boost::variant from mpl vector
-using AllParameterVariant = typename boost::make_variant_over<ParameterTypesAsMplVector>::type;
+using AllParameterVariantNonExplicit = typename boost::make_variant_over<ParameterTypesAsMplVector>::type;
+
+struct AllParameterVariant : public AllParameterVariantNonExplicit {
+  AllParameterVariant() : AllParameterVariantNonExplicit() {}
+
+  template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, AllParameterVariant> && !std::is_same_v<std::decay_t<T>, AllTypeVariant>>>
+  explicit AllParameterVariant(const T& value) : AllParameterVariantNonExplicit(value) {}
+
+  template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, AllParameterVariant> && !std::is_same_v<std::decay_t<T>, AllTypeVariant>>>
+  explicit AllParameterVariant(T&& value) : AllParameterVariantNonExplicit(std::forward<T>(value)) {}
+
+  // We do allow implicit comparisons from AllTypeVariant to AllParameterVariant
+  AllParameterVariant(const AllTypeVariant& variant) : AllParameterVariantNonExplicit(variant) {}
+  AllParameterVariant(AllTypeVariant&& variant) : AllParameterVariantNonExplicit(std::forward<AllTypeVariant>(variant)) {}
+
+  // No need for a destructor here, because the base destructor will be called. Rule of five does not apply.
+  AllParameterVariant(const AllParameterVariant& variant)
+      : AllParameterVariantNonExplicit(static_cast<const AllParameterVariantNonExplicit&>(variant)) {}
+  AllParameterVariant(AllParameterVariant&& variant)
+      : AllParameterVariantNonExplicit(static_cast<AllParameterVariantNonExplicit&&>(
+            static_cast<AllParameterVariantNonExplicit&&>(std::forward<AllParameterVariant>(variant)))) {}
+  AllParameterVariant& operator=(const AllParameterVariant& variant) {
+    return static_cast<AllParameterVariant&>(
+        AllParameterVariantNonExplicit::operator=(static_cast<const AllParameterVariantNonExplicit&>(variant)));
+  }
+  AllParameterVariant& operator=(AllParameterVariant&& variant) {
+    return static_cast<AllParameterVariant&>(
+        AllParameterVariantNonExplicit::operator=(static_cast<AllParameterVariantNonExplicit&&>(
+            static_cast<AllParameterVariantNonExplicit&&>(std::forward<AllParameterVariant>(variant)))));
+  }
+
+  bool operator==(const AllParameterVariant& other) const {
+    return static_cast<const AllParameterVariantNonExplicit&>(*this) ==
+           static_cast<const AllParameterVariantNonExplicit&>(other);
+  }
+
+  bool operator!=(const AllParameterVariant& other) const {
+    return static_cast<const AllParameterVariantNonExplicit&>(*this) !=
+           static_cast<const AllParameterVariantNonExplicit&>(other);
+  }
+};
 
 // Function to check if AllParameterVariant is AllTypeVariant
 inline bool is_variant(const AllParameterVariant& variant) { return (variant.type() == typeid(AllTypeVariant)); }

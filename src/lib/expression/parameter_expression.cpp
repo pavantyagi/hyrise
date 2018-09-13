@@ -105,8 +105,8 @@ size_t ParameterExpression::_on_hash() const {
   auto hash = boost::hash_value(parameter_id.t);
 
   boost::hash_combine(hash, static_cast<std::underlying_type_t<ParameterExpressionType>>(parameter_expression_type));
-  boost::hash_combine(hash, std::hash<AllTypeVariant>{}(_value.has_value()));
-  boost::hash_combine(hash, std::hash<AllTypeVariant>{}(_value.value_or(NullValue{})));
+  boost::hash_combine(hash, std::hash<AllTypeVariant>{}(AllTypeVariant{_value.has_value()}));
+  boost::hash_combine(hash, std::hash<AllTypeVariant>{}(_value.value_or(AllTypeVariant{NullValue{}})));
   boost::hash_combine(hash, _referenced_expression_info.has_value());
 
   if (_referenced_expression_info) {
