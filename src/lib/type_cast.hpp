@@ -36,7 +36,7 @@ const T& get(const AllTypeVariant& value) {
 // cast methods - from one type to another
 
 template <typename T, typename U, typename = std::enable_if_t<std::is_same_v<T, U>>>
-__attribute__((always_inline)) auto&& type_cast(U&& value) {
+inline __attribute__((always_inline)) auto&& type_cast(U&& value) {
   return std::forward<U>(value);
 }
 
